@@ -15,28 +15,36 @@ import android.widget.RadioButton;
 import android.widget.Toast;
 
 import com.rengwuxian.rxjavasamples.BaseFragment;
-import com.rengwuxian.rxjavasamples.network.Network;
 import com.rengwuxian.rxjavasamples.R;
 import com.rengwuxian.rxjavasamples.adapter.ZhuangbiListAdapter;
 import com.rengwuxian.rxjavasamples.model.ZhuangbiImage;
+import com.rengwuxian.rxjavasamples.network.Network;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnCheckedChanged;
-import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class ElementaryFragment extends BaseFragment {
-    @BindView(R.id.swipeRefreshLayout) SwipeRefreshLayout swipeRefreshLayout;
-    @BindView(R.id.gridRv) RecyclerView gridRv;
+    @BindView(R.id.swipeRefreshLayout)
+    SwipeRefreshLayout swipeRefreshLayout;
+    @BindView(R.id.gridRv)
+    RecyclerView gridRv;
 
     ZhuangbiListAdapter adapter = new ZhuangbiListAdapter();
 
+    /**
+     * ButterKnife 注解绑定 android.widget.RadioButton.OnCheckedChangeListener
+     *
+     * @param searchRb 搜索key的RadioButton
+     * @param checked  是否选中
+     */
     @OnCheckedChanged({R.id.searchRb1, R.id.searchRb2, R.id.searchRb3, R.id.searchRb4})
     void onTagChecked(RadioButton searchRb, boolean checked) {
         if (checked) {
@@ -51,6 +59,8 @@ public class ElementaryFragment extends BaseFragment {
         disposable = Network.getZhuangbiApi()
                 .search(key)
                 .subscribeOn(Schedulers.io())
+                //故意加500ms delay的，好让我看清楚swipeRefreshLayout进度条
+                .delay(500, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<List<ZhuangbiImage>>() {
                     @Override
@@ -62,19 +72,22 @@ public class ElementaryFragment extends BaseFragment {
                     @Override
                     public void accept(@NonNull Throwable throwable) throws Exception {
                         swipeRefreshLayout.setRefreshing(false);
-                        Toast.makeText(getActivity(), R.string.loading_failed, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity(), R.string.loading_failed, Toast
+                                .LENGTH_SHORT).show();
                     }
                 });
     }
 
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle
+            savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_elementary, container, false);
         ButterKnife.bind(this, view);
 
         gridRv.setLayoutManager(new GridLayoutManager(getActivity(), 2));
         gridRv.setAdapter(adapter);
+        // 设置下拉刷新进度条颜色变化
         swipeRefreshLayout.setColorSchemeColors(Color.BLUE, Color.GREEN, Color.RED, Color.YELLOW);
         swipeRefreshLayout.setEnabled(false);
 
